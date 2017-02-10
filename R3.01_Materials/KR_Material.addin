@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<RevitAddIns>
+  <AddIn Type="Command">
+    <Assembly>PIK\03\R3.1_Materials\R3.01_Materials.dll</Assembly>
+    <AddInId>385740DD-A983-480D-81DF-E81FC386C1EE</AddInId>
+    <VendorId>Vildar</VendorId>
+    <VendorDescription>vildar82@gmail.com</VendorDescription>
+    <FullClassName>R3_01_Materials.Command</FullClassName>
+    <Text>R3_01_Materials</Text>        
+  </AddIn>
+  <!--<AddIn Type="Application">
+    <Name>Modeless</Name>
+    <Assembly>C:\Revit 2015 SDK\Samples\ModelessDialog\ModelessForm_ExternalEvent\CS\bin\Debug\ModelessForm_ExternalEvent.dll</Assembly>
+    <AddInId>604B1052-F742-4951-8576-C261D1993108</AddInId>
+    <FullClassName>Revit.SDK.Samples.ModelessForm_ExternalEvent.CS.Application</FullClassName>
+    <VendorId>Vildar</VendorId>
+    <VendorDescription>Autodesk, www.autodesk.com</VendorDescription>
+  </AddIn>-->
+</RevitAddIns>
