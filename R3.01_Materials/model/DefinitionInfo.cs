@@ -15,9 +15,7 @@ namespace R3_01_Materials
         public DefinitionInfo(Definition def, List<BuiltInCategory> categories)
         {
             Definition = def;
-            Categories = categories;
-                //(binding as ElementBinding).Categories.OfType<Category>().
-                //Select(s => (BuiltInCategory)s.Id.IntegerValue).ToList();
+            Categories = categories;               
         }
 
         public Definition Definition { get; set; }

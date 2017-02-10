@@ -53,11 +53,11 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Command.cs" />
-    <Compile Include="DefinitionInfo.cs" />
-    <Compile Include="DefinitionService.cs" />
-    <Compile Include="FilterService.cs" />
-    <Compile Include="MaterialGBService.cs" />
-    <Compile Include="Options.cs" />
+    <Compile Include="model\DefinitionInfo.cs" />
+    <Compile Include="model\DefinitionService.cs" />
+    <Compile Include="model\FilterService.cs" />
+    <Compile Include="model\MaterialGBService.cs" />
+    <Compile Include="model\Options.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
