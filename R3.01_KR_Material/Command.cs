@@ -8,7 +8,7 @@ using Autodesk.Revit.DB;
 using Autodesk.Revit.Attributes;
 using Revit_Message;
 
-namespace R3_01_Materials
+namespace R3_01_KR_Material
 {
     /// <summary>
     /// Проверка параметра "КР_Материал" у семейств и запись этого параметра в элементы если у них материал Железобетон
@@ -21,31 +21,25 @@ namespace R3_01_Materials
         public static Error Error { get; private set; }
 
         public Result Execute(ExternalCommandData commandData, ref string message, ElementSet errElements)
-        {            
+        {
             try
             {
                 UiApp = commandData.Application;
                 Options = new Options();
                 Error = new Error();
                 var doc = commandData.Application.ActiveUIDocument.Document;
-                // Проверка определения параметра в проекте                      
-                DefinitionService.CheckDefinition();                
 
-                // Фильтр элементов                
-                var elements = FilterService.Filter(doc, Options.Categories);
+                // Проверка определения параметра в проекте                      
+                DefinitionService.CheckDefinition();
 
                 // Установка параметра ЖБ для элементов
-                MaterialGBService.SetParameters(doc, elements);
+                MaterialGBService.SetParameters();
 
                 if (Error.IsError)
                 {
                     Error.Show(commandData.Application);
-                    return Result.Cancelled;
                 }
-                else
-                {
-                    return Result.Succeeded;
-                }
+                return Result.Succeeded;
             }
             catch (Autodesk.Revit.Exceptions.OperationCanceledException)
             {

@@ -5,13 +5,15 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace R3_01_Materials
+namespace R3_01_KR_Material
 {
     public class Options
     {
         public string ParamKRMaterialName { get; set; } = "KR_Материал";
+        public string ParamKRMaterialGroup { get; set; } = "KR";
         public string ParamKRMaterialValue { get; set; } = "ЖБ";
-        public string ParamARMaterialValue { get; set; } = "ЖЕЛЕЗОБЕТОН";        
+        public string ParamARMaterialValue { get; set; } = "ЖЕЛЕЗОБЕТОН";
+        public ParameterType ParamARMaterialType { get; set; } =  ParameterType.Material;
         public string SharedParameterFile { get; set; } = @"\\dsk2.picompany.ru\project\CAD_Settings\Revit_server\04. Shared Parameters\SP-BS-PIC(2).txt"; 
         public List<BuiltInCategory> Categories { get; set; } = new List<BuiltInCategory> {
             BuiltInCategory.OST_Walls,

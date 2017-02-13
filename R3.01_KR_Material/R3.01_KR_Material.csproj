@@ -7,8 +7,8 @@
     <ProjectGuid>{2014FED9-8F48-47D0-9527-3993CBF46F85}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>R3_01_Materials</RootNamespace>
-    <AssemblyName>R3.01_Materials</AssemblyName>
+    <RootNamespace>R3_01_KR_Material</RootNamespace>
+    <AssemblyName>R3.01_KR_Material</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>
@@ -16,26 +16,34 @@
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <OutputPath>..\..\..\..\Users\khisyametdinovvt\AppData\Roaming\Autodesk\Revit\Addins\2015\PIK\03\R3.1_Materials\</OutputPath>
+    <OutputPath>c:\Users\khisyametdinovvt\AppData\Roaming\Autodesk\Revit\Addins\2015\PIK\03_KR\R3.1_KR_Material\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>pdbonly</DebugType>
+    <DebugType>none</DebugType>
     <Optimize>true</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
+    <OutputPath>\\dsk2.picompany.ru\project\CAD_Settings\Revit_server\10. Dll%27s\Dll\PIK\03_KR\R3.01_KR_Material\</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="PluginStatistic">
+      <HintPath>\\dsk2.picompany.ru\project\CAD_Settings\Revit_server\10. Dll's\Dll\PluginStatistic.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="RevitAPI">
-      <HintPath>..\..\..\..\..\Program Files\Autodesk\Revit 2015\RevitAPI.dll</HintPath>
+      <HintPath>C:\Program Files\Autodesk\Revit 2015\RevitAPI.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="RevitAPIUI">
-      <HintPath>..\..\..\..\..\Program Files\Autodesk\Revit 2015\RevitAPIUI.dll</HintPath>
+      <HintPath>C:\Program Files\Autodesk\Revit 2015\RevitAPIUI.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Revit_Lib">
+      <HintPath>\\dsk2.picompany.ru\project\CAD_Settings\Revit_server\10. Dll's\Dll\Revit_Lib.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="Revit_Message">
@@ -59,9 +67,6 @@
     <Compile Include="model\MaterialGBService.cs" />
     <Compile Include="model\Options.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="KR_Material.addin" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
