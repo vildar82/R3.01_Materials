@@ -23,40 +23,54 @@ namespace R3_01_KR_Material
         {
             var uiApp = Command.UiApp;
             var doc = uiApp.ActiveUIDocument.Document;
-            // Поиск параметра            
-            var defefInfoFinds = IterateParameters(doc, d=>string.Equals(d.Key.Name, Command.Options.ParamKRMaterialName,
-                    StringComparison.OrdinalIgnoreCase));            
+            using (var t = new Transaction(doc, "Проверка параметра"))
+            {
+                t.Start();
+                // Поиск параметра            
+                var defefInfoFinds = IterateParameters(doc, d => string.Equals(d.Key.Name, Command.Options.ParamKRMaterialName,
+                    StringComparison.OrdinalIgnoreCase));
 
-            // параметра из файла общих параметров
-            var defFromSharedFile = GetDefinitionFromSharedParameterFile();
-            
-            if (defefInfoFinds == null || !defefInfoFinds.Any())
-            {
-                // Нет параметра в проекте - создание
-                CreateDefinition(defFromSharedFile);                
-            }
-            else if (defefInfoFinds.Skip(1).Any())
-            {
-                // Несколько параметров КР_Материал - удаление и создание
-                foreach (var item in defefInfoFinds)
+                // параметра из файла общих параметров
+                var defFromSharedFile = GetDefinitionFromSharedParameterFile();
+
+                if (defefInfoFinds == null || !defefInfoFinds.Any())
                 {
-                    DeleteParam(uiApp,item);
-                }
-                CreateDefinition(defFromSharedFile);
-            }
-            else
-            {
-                // Найден только один параметр КР_Материал в проекте
-                var paramDefFind = defefInfoFinds.First();
-                // Определение GUIDa параметра
-                var guid = DefineGUID(Command.Options.ParamKRMaterialName);
-                // Если гуиды совпадают и группы, то ок, если нет, то замена параметра из файла общих параметров
-                if (guid != defFromSharedFile.GUID || 
-                    !CheckCategories(paramDefFind))
-                {
-                    DeleteParam(uiApp, paramDefFind);
+                    // Нет параметра в проекте - создание
                     CreateDefinition(defFromSharedFile);
-                }                
+                }
+                else if (defefInfoFinds.Skip(1).Any())
+                {
+                    // Несколько параметров КР_Материал - удаление и создание
+                    foreach (var item in defefInfoFinds)
+                    {
+                        DeleteParam(uiApp, item);
+                    }
+                    CreateDefinition(defFromSharedFile);
+                }
+                else
+                {
+                    // Найден только один параметр КР_Материал в проекте
+                    var paramDefFind = defefInfoFinds.First();
+                    // Определение GUIDa параметра
+                    var guid = DefineGUID(Command.Options.ParamKRMaterialName);
+                    // Если гуиды совпадают и группы, то ок, если нет, то замена параметра из файла общих параметров
+                    if (guid != defFromSharedFile.GUID ||
+                        !CheckCategories(paramDefFind))
+                    {
+                        DeleteParam(uiApp, paramDefFind);
+                        CreateDefinition(defFromSharedFile);
+                    }
+                    else
+                    {
+                        // Проверить примениение параметра в группах
+                        var internalDef = (InternalDefinition)paramDefFind.Definition;
+                        if (!internalDef.VariesAcrossGroups)
+                        {
+                            internalDef.SetAllowVaryBetweenGroups(doc, true);
+                        }
+                    }
+                }
+                t.Commit();
             }
         }        
 
@@ -84,28 +98,23 @@ namespace R3_01_KR_Material
         /// Создание параметра из файла общих параметров
         /// </summary>        
         private static void CreateDefinition(Definition defKRMaterial)
-        {            
+        {
             var doc = Command.UiApp.ActiveUIDocument.Document;
-            using (var t = new Transaction(doc, "Создание параметра"))
-            {                
-                t.Start();
-                // Привязка категорий
-                var categories = Command.UiApp.Application.Create.NewCategorySet();
-                foreach (var catId in Command.Options.Categories)
-                {
-                    var cat = doc.Settings.Categories.get_Item(catId);
-                    categories.Insert(cat);
-                }                
-                var binding = Command.UiApp.Application.Create.NewInstanceBinding(categories);                
-                if (!doc.ParameterBindings.Insert(defKRMaterial, binding, BuiltInParameterGroup.PG_TEXT))
-                {
-                    throw new Exception($"Не удалось создать параметр '{defKRMaterial.Name}' из файла общих параметров.");
-                }
-                
-                var resDef = IterateParameters(doc, (p) => p.Key.Name == defKRMaterial.Name).First().Definition as InternalDefinition;
-                resDef.SetAllowVaryBetweenGroups(doc, true);
-                t.Commit();
+            // Привязка категорий
+            var categories = Command.UiApp.Application.Create.NewCategorySet();
+            foreach (var catId in Command.Options.Categories)
+            {
+                var cat = doc.Settings.Categories.get_Item(catId);
+                categories.Insert(cat);
             }
+            var binding = Command.UiApp.Application.Create.NewInstanceBinding(categories);
+            if (!doc.ParameterBindings.Insert(defKRMaterial, binding, BuiltInParameterGroup.PG_TEXT))
+            {
+                throw new Exception($"Не удалось создать параметр '{defKRMaterial.Name}' из файла общих параметров.");
+            }
+
+            var resDef = IterateParameters(doc, (p) => p.Key.Name == defKRMaterial.Name).First().Definition as InternalDefinition;
+            resDef.SetAllowVaryBetweenGroups(doc, true);
         }
 
         private static ExternalDefinition GetDefinitionFromSharedParameterFile()
@@ -131,12 +140,7 @@ namespace R3_01_KR_Material
 
         private static void DeleteParam(UIApplication uiApp, DefinitionInfo item)
         {
-            using (var t = new Transaction(uiApp.ActiveUIDocument.Document, $"Удаление параметра {item.Definition.Name}"))
-            {
-                t.Start();
-                var res = uiApp.ActiveUIDocument.Document.ParameterBindings.Erase(item.Definition);
-                t.Commit();
-            }            
+            var res = uiApp.ActiveUIDocument.Document.ParameterBindings.Remove(item.Definition);
         }        
 
         private static Guid DefineGUID(string name)
