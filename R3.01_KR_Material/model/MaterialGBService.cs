@@ -21,34 +21,71 @@ namespace R3_01_KR_Material
                 foreach (var elem in elements)
                 {
                     if (elem is ElementType)
-                        continue;
-                    if (elem.GetMaterialIds(false).Any(m => Regex.IsMatch(
-                        ((Material)doc.GetElement(m)).Name,
-                        Command.Options.ParamARMaterialValue, RegexOptions.IgnoreCase)))
                     {
-                        SetMaterialGB(elem);
-                        Debug.WriteLine($"SetMaterialGB - {elem}");                        
+                        Debug.WriteLine($"Пропущен элемент - {elem}");
+                        continue;
+                    }
+
+                    if (HasGBMaterial(doc, elem))
+                    {
+                        SetParam(elem, Command.Options.ParamKRMaterialValue);
+                        Debug.WriteLine($"SetMaterialGB - {elem}");
+                    }
+                    else
+                    {
+                        SetParam(elem, null);
                     }
                 }
                 t.Commit();
             }
         }
 
-        private static void SetMaterialGB(Element elem)
+        private static bool HasGBMaterial(Document doc, Element elem)
+        {
+            var maters = elem.GetMaterialIds(false);
+            if (!maters.Any())
+            {
+                // Нет материалов в элементе - искать в параметрах типа
+                return HasGBMaterialInParameters(doc.GetElement(elem.GetTypeId()));                                                
+            }
+            return maters.Any(m => IsMaterialGB(((Material)doc.GetElement(m)).Name));
+        }
+
+        private static bool HasGBMaterialInParameters(Element elem)
+        {
+            foreach (Parameter item in elem.Parameters)
+            {
+                if (item.Definition.ParameterType == ParameterType.Material &&
+                    item.HasValue &&
+                    IsMaterialGB(item.AsValueString()))
+                {
+                    return true;
+                }
+            }
+            return false;            
+        }
+
+        private static bool IsMaterialGB(string name)
+        {
+            return Regex.IsMatch(name, Command.Options.ParamARMaterialValue, RegexOptions.IgnoreCase);
+        }
+
+        private static void SetParam(Element elem, string value)
         {
             // Записать в параметр КР_Материал = ЖБ
             // Что если у элемента несколько параметров "КР_Материал"
             var pGB = elem.LookupParameter(Command.Options.ParamKRMaterialName);
             if (pGB == null)
             {
-                // Не может быть
+                // Не может быть!
                 Command.Error.AddErrorMesaage($"Элемент не содержит параметр '{Command.Options.ParamKRMaterialName}' - '{elem.Name}'", elem);
             }
-            else if (pGB.AsString() != Command.Options.ParamKRMaterialValue)
-            {
+            else if ((pGB.HasValue && value == null) ||
+                pGB.AsString() != value)
+            {                
                 try
                 {
-                    pGB.Set(Command.Options.ParamKRMaterialValue);
+                    pGB.Set(value);
                 }
                 catch (Exception ex)
                 {

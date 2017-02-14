@@ -16,7 +16,7 @@
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <OutputPath>c:\Users\khisyametdinovvt\AppData\Roaming\Autodesk\Revit\Addins\2015\PIK\03_KR\R3.1_KR_Material\</OutputPath>
+    <OutputPath>c:\Users\khisyametdinovvt\AppData\Roaming\Autodesk\Revit\Addins\2015\PIK\03_KR\R3.01_KR_Material\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
