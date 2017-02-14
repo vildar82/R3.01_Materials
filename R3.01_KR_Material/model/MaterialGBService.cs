@@ -42,13 +42,14 @@ namespace R3_01_KR_Material
 
         private static bool HasGBMaterial(Document doc, Element elem)
         {
+            // Просмотр среди материалов
             var maters = elem.GetMaterialIds(false);
-            if (!maters.Any())
+            if (maters.Any(m => IsMaterialGB(((Material)doc.GetElement(m)).Name)))
             {
-                // Нет материалов в элементе - искать в параметрах типа
-                return HasGBMaterialInParameters(doc.GetElement(elem.GetTypeId()));                                                
+                return true;
             }
-            return maters.Any(m => IsMaterialGB(((Material)doc.GetElement(m)).Name));
+            // Провсмотр среди параметров
+            return HasGBMaterialInParameters(doc.GetElement(elem.GetTypeId()));
         }
 
         private static bool HasGBMaterialInParameters(Element elem)
