@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Autodesk.Revit.DB;
 using System.Text.RegularExpressions;
 using System.Diagnostics;
+using Revit_Lib.Extensions;
 
 namespace R3_01_KR_Material
 {
@@ -19,12 +20,15 @@ namespace R3_01_KR_Material
             {
                 t.Start();
                 foreach (var elem in elements)
-                {
+                {                    
                     if (elem is ElementType)
                     {
                         Debug.WriteLine($"Пропущен элемент - {elem}");
                         continue;
                     }
+
+                    if (!elem.CheckElementAccess(ref Command.errors))
+                        continue;
 
                     if (HasGBMaterial(doc, elem))
                     {
@@ -38,7 +42,7 @@ namespace R3_01_KR_Material
                 }
                 t.Commit();
             }
-        }
+        }       
 
         private static bool HasGBMaterial(Document doc, Element elem)
         {
@@ -48,12 +52,17 @@ namespace R3_01_KR_Material
             {
                 return true;
             }
-            // Провсмотр среди параметров
+            // Провсмотр среди параметров, элемента и его типа
+            if (HasGBMaterialInParameters(elem))
+            {
+                return true;
+            }
             return HasGBMaterialInParameters(doc.GetElement(elem.GetTypeId()));
         }
 
         private static bool HasGBMaterialInParameters(Element elem)
         {
+            if (elem == null) return false;
             foreach (Parameter item in elem.Parameters)
             {
                 if (item.Definition.ParameterType == ParameterType.Material &&
@@ -73,13 +82,12 @@ namespace R3_01_KR_Material
 
         private static void SetParam(Element elem, string value)
         {
-            // Записать в параметр КР_Материал = ЖБ
-            // Что если у элемента несколько параметров "КР_Материал"
+            // Записать в параметр КР_Материал = ЖБ            
             var pGB = elem.LookupParameter(Command.Options.ParamKRMaterialName);
             if (pGB == null)
             {
                 // Не может быть!
-                Command.Error.AddErrorMesaage($"Элемент не содержит параметр '{Command.Options.ParamKRMaterialName}' - '{elem.Name}'", elem);
+                Command.errors.AddErrorMesaage($"Элемент не содержит параметр '{Command.Options.ParamKRMaterialName}' - '{elem.Name}'", elem);
             }
             else if ((pGB.HasValue && value == null) ||
                 pGB.AsString() != value)
@@ -90,7 +98,7 @@ namespace R3_01_KR_Material
                 }
                 catch (Exception ex)
                 {
-                    Command.Error.AddErrorMesaage($"Ошибка установки параметра '{Command.Options.ParamKRMaterialName}'='{Command.Options.ParamKRMaterialValue}' в элемент {elem.Name}. {ex.Message}", elem);
+                    Command.errors.AddErrorMesaage($"Ошибка установки параметра '{Command.Options.ParamKRMaterialName}'='{Command.Options.ParamKRMaterialValue}' в элемент {elem.Name}. {ex.Message}", elem);
                 }
             }
         }

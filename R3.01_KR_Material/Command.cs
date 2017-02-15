@@ -18,7 +18,7 @@ namespace R3_01_KR_Material
     {
         public static UIApplication UiApp { get; private set; }
         public static Options Options { get; private set; }
-        public static Error Error { get; private set; }
+        public static Error errors;
 
         public Result Execute(ExternalCommandData commandData, ref string message, ElementSet errElements)
         {
@@ -26,7 +26,7 @@ namespace R3_01_KR_Material
             {
                 UiApp = commandData.Application;
                 Options = new Options();
-                Error = new Error();
+                errors = new Error();
                 var doc = commandData.Application.ActiveUIDocument.Document;
 
                 // Проверка определения параметра в проекте                      
@@ -35,9 +35,9 @@ namespace R3_01_KR_Material
                 // Установка параметра ЖБ для элементов
                 MaterialGBService.SetParameters();
 
-                if (Error.IsError)
+                if (errors.IsError)
                 {
-                    Error.Show(commandData.Application);
+                    errors.Show(commandData.Application);
                 }
                 return Result.Succeeded;
             }
@@ -54,7 +54,7 @@ namespace R3_01_KR_Material
             {
                 UiApp = null;
                 Options = null;
-                Error = null;
+                errors = null;
             }        
         }        
     }
