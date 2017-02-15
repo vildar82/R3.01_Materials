@@ -122,7 +122,7 @@ namespace R3_01_KR_Material
 
         private void DeleteParam(DefinitionInfo item)
         {
-            uiApp.ActiveUIDocument.Document.ParameterBindings.Erase(item.Definition);
+            doc.ParameterBindings.Erase(item.Definition);
         }
 
 
