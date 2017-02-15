@@ -40,7 +40,7 @@ namespace R3_01_KR_Material
                 t.Start();
                 // Поиск параметра            
                 var defefInfoFinds = IterateParameters(doc, d => string.Equals(d.Key.Name, opt.ParamKRMaterialName,
-                    StringComparison.OrdinalIgnoreCase));
+                    StringComparison.OrdinalIgnoreCase)).ToList();
 
                 // параметра из файла общих параметров
                 var defFromSharedFile = GetDefinitionFromSharedParameterFile();
@@ -122,9 +122,8 @@ namespace R3_01_KR_Material
 
         private void DeleteParam(DefinitionInfo item)
         {
-            doc.ParameterBindings.Erase(item.Definition);
+            doc.ParameterBindings.Remove(item.Definition);
         }
-
 
         /// <summary>
         /// Создание параметра из файла общих параметров
