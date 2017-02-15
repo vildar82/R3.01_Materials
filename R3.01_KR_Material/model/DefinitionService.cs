@@ -8,73 +8,101 @@ using Autodesk.Revit.DB;
 using System.Diagnostics;
 using Autodesk.Revit.ApplicationServices;
 using Revit_Lib.Extensions;
+using Revit_Message;
 
 namespace R3_01_KR_Material
 {
     /// <summary>
     /// Проверка опредедления параметра в документе
     /// </summary>
-    public static class DefinitionService
+    public class DefinitionService
     {
+        UIApplication uiApp;
+        Options opt;
+        Document doc;
+        Error err;
+
+        public DefinitionService(UIApplication uiApp, Options opt, Error err)
+        {
+            this.err = err;
+            this.uiApp = uiApp;
+            this.opt = opt;
+            doc = uiApp.ActiveUIDocument.Document;
+        }
+
         /// <summary>
         /// Проверка параметра "КР_Материал"
         /// </summary>        
-        public static void CheckDefinition() 
-        {
-            var uiApp = Command.UiApp;
-            var doc = uiApp.ActiveUIDocument.Document;
+        public void CheckDefinition() 
+        {                        
             using (var t = new Transaction(doc, "Проверка параметра"))
             {
                 t.Start();
                 // Поиск параметра            
-                var defefInfoFinds = IterateParameters(doc, d => string.Equals(d.Key.Name, Command.Options.ParamKRMaterialName,
+                var defefInfoFinds = IterateParameters(doc, d => string.Equals(d.Key.Name, opt.ParamKRMaterialName,
                     StringComparison.OrdinalIgnoreCase));
 
                 // параметра из файла общих параметров
                 var defFromSharedFile = GetDefinitionFromSharedParameterFile();
 
-                if (defefInfoFinds == null || !defefInfoFinds.Any())
+                // Если нет такого параметра, или проверены найденные параметры и определен правильный
+                CheckFindsDefs(defefInfoFinds, defFromSharedFile);                
+                                
+                t.Commit();
+            }
+        }
+
+        /// <summary>
+        /// Проверка найденных параметров КР_Материал
+        /// </summary>
+        /// <param name="defefInfoFinds">Найденные параметры в проекте</param>
+        /// <param name="defFromSharedFile">Параметр из файла общих параметров</param>        
+        private void CheckFindsDefs(IEnumerable<DefinitionInfo> defefInfoFinds, ExternalDefinition defFromSharedFile)
+        {
+            if (defefInfoFinds == null || !defefInfoFinds.Any())
+            {
+                // Нет параметра в проекте - создание
+                CreateDefinition(defFromSharedFile);
+                return;
+            }
+
+            bool isFindGuid = false;
+            foreach (var defFind in defefInfoFinds)
+            {
+                var guid = DefineGUID(opt.ParamKRMaterialName);
+                if (guid == defFromSharedFile.GUID)
                 {
-                    // Нет параметра в проекте - создание
-                    CreateDefinition(defFromSharedFile);
-                }
-                else if (defefInfoFinds.Skip(1).Any())
-                {
-                    // Несколько параметров КР_Материал - удаление и создание
-                    foreach (var item in defefInfoFinds)
+                    isFindGuid = true;
+                    // Проверка настроек параметра
+                    if (!CheckCategories(defFind))
                     {
-                        DeleteParam(uiApp, item);
-                    }
-                    CreateDefinition(defFromSharedFile);
-                }
-                else
-                {
-                    // Найден только один параметр КР_Материал в проекте
-                    var paramDefFind = defefInfoFinds.First();
-                    // Определение GUIDa параметра
-                    var guid = DefineGUID(Command.Options.ParamKRMaterialName);
-                    // Если гуиды совпадают и группы, то ок, если нет, то замена параметра из файла общих параметров
-                    if (guid != defFromSharedFile.GUID ||
-                        !CheckCategories(paramDefFind))
-                    {
-                        DeleteParam(uiApp, paramDefFind);
+                        // Исправление набора категорий
+                        DeleteParam(defFind);
                         CreateDefinition(defFromSharedFile);
                     }
                     else
                     {
                         // Проверить примениение параметра в группах
-                        var internalDef = (InternalDefinition)paramDefFind.Definition;
+                        var internalDef = (InternalDefinition)defFind.Definition;
                         if (!internalDef.VariesAcrossGroups)
                         {
                             internalDef.SetAllowVaryBetweenGroups(doc, true);
                         }
                     }
                 }
-                t.Commit();
+                else
+                {
+                    // Предупреждение                    
+                    throw new Exception($"Неверный параметр '{opt.ParamKRMaterialName}' (GUID отличается от файла общих параметров.");
+                }
             }
-        }        
+            if (!isFindGuid)
+            {
+                CreateDefinition(defFromSharedFile);
+            }
+        }
 
-        public static IEnumerable<DefinitionInfo> IterateParameters(Document doc, Predicate<DefinitionBindingMapIterator> predicate)
+        public IEnumerable<DefinitionInfo> IterateParameters(Document doc, Predicate<DefinitionBindingMapIterator> predicate)
         {
             var bindings = doc.ParameterBindings;
             int n = bindings.Size;
@@ -85,68 +113,64 @@ namespace R3_01_KR_Material
                 {                    
                     Debug.WriteLine($"{it.Key.Name}, {it.Key}, {it.Key.ParameterType}");
                     if (predicate(it))
-                    {
-                        var categories = (it.Current as ElementBinding)?.Categories.OfType<Category>().
-                                        Select(s => (BuiltInCategory)s.Id.IntegerValue).ToList();
-                        yield return new DefinitionInfo(it.Key, categories);
+                    {                        
+                        yield return new DefinitionInfo(it.Key, it.Current as ElementBinding);
                     }
                 }
             }
         }
 
+        private void DeleteParam(DefinitionInfo item)
+        {
+            uiApp.ActiveUIDocument.Document.ParameterBindings.Erase(item.Definition);
+        }
+
+
         /// <summary>
         /// Создание параметра из файла общих параметров
         /// </summary>        
-        private static void CreateDefinition(Definition defKRMaterial)
-        {
-            var doc = Command.UiApp.ActiveUIDocument.Document;
+        private void CreateDefinition(Definition defKRMaterial)
+        {            
             // Привязка категорий
-            var categories = Command.UiApp.Application.Create.NewCategorySet();
-            foreach (var catId in Command.Options.Categories)
-            {
-                var cat = doc.Settings.Categories.get_Item(catId);
-                categories.Insert(cat);
+            var categories = uiApp.Application.Create.NewCategorySet();
+            foreach (var catId in opt.Categories)
+            {                
+                categories.Insert(doc.Settings.Categories.get_Item(catId));
             }
-            var binding = Command.UiApp.Application.Create.NewInstanceBinding(categories);
+            var binding = uiApp.Application.Create.NewInstanceBinding(categories);
             if (!doc.ParameterBindings.Insert(defKRMaterial, binding, BuiltInParameterGroup.PG_TEXT))
             {
                 throw new Exception($"Не удалось создать параметр '{defKRMaterial.Name}' из файла общих параметров.");
             }
-
             var resDef = IterateParameters(doc, (p) => p.Key.Name == defKRMaterial.Name).First().Definition as InternalDefinition;
             resDef.SetAllowVaryBetweenGroups(doc, true);
         }
 
-        private static ExternalDefinition GetDefinitionFromSharedParameterFile()
+        private ExternalDefinition GetDefinitionFromSharedParameterFile()
         {
-            var oldFile = Command.UiApp.Application.SharedParametersFilename;
+            var oldFile = uiApp.Application.SharedParametersFilename;
             try
             {
-                Command.UiApp.Application.SharedParametersFilename = Command.Options.SharedParameterFile;
+                uiApp.Application.SharedParametersFilename = opt.SharedParameterFile;
                 // Определение параметра из файла общих параметров
-                return Command.UiApp.Application.OpenSharedParameterFile().Groups.First(g => g.Name == Command.Options.ParamKRMaterialGroup).
-                    Definitions.First(d => string.Equals(d.Name, Command.Options.ParamKRMaterialName,
+                return uiApp.Application.OpenSharedParameterFile().Groups.First(g => g.Name == opt.ParamKRMaterialGroup).
+                    Definitions.First(d => string.Equals(d.Name, opt.ParamKRMaterialName,
                         StringComparison.OrdinalIgnoreCase)) as ExternalDefinition;
             }
             catch (Exception ex)
             {
-                throw new Exception($"Не найден параметр '{Command.Options.ParamKRMaterialName}' в общем файле параметров. {ex.Message}");
+                throw new Exception($"Не найден параметр '{opt.ParamKRMaterialName}' в общем файле параметров. {ex.Message}");
             }
             finally
             {
-                Command.UiApp.Application.SharedParametersFilename = oldFile;
+                uiApp.Application.SharedParametersFilename = oldFile;
             }
-        }
-
-        private static void DeleteParam(UIApplication uiApp, DefinitionInfo item)
-        {
-            var res = uiApp.ActiveUIDocument.Document.ParameterBindings.Remove(item.Definition);
         }        
 
-        private static Guid DefineGUID(string name)
+        private Guid DefineGUID(string name)
         {
             // Найти этот параметр у любого элемента в моделе
-            var param = FilterService.Filter().Where(e => !(e is ElementType)).First().LookupParameter(name);
+            var param = FilterService.Filter(doc, opt.Categories).Where(e => !(e is ElementType)).First().LookupParameter(name);
             if (param == null)
             {
                 throw new Exception($"Не найден параметр '{name}'");
@@ -157,9 +181,9 @@ namespace R3_01_KR_Material
         /// <summary>
         /// Сравнение набора категорий в параметре текущего проекта с необходимым набором категорий
         /// </summary>        
-        private static bool CheckCategories(DefinitionInfo paramDefFind)
+        private bool CheckCategories(DefinitionInfo paramDefFind)
         {
-            return Command.Options.Categories.EqualsList(paramDefFind.Categories);
+            return opt.Categories.EqualsList(paramDefFind.Categories);
         }        
     }
 }

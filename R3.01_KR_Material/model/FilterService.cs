@@ -12,12 +12,11 @@ namespace R3_01_KR_Material
     /// </summary>
     public static class FilterService
     {
-        public static IEnumerable<Element> Filter()
+        public static IEnumerable<Element> Filter(Document doc, IEnumerable<BuiltInCategory> categories)
         {             
-            var catFilters = Command.Options.Categories.Select(s=>(ElementFilter)new ElementCategoryFilter(s)).ToList();            
+            var catFilters = categories.Select(s=>(ElementFilter)new ElementCategoryFilter(s)).ToList();            
             var orFilter = new LogicalOrFilter(catFilters);
-            return new FilteredElementCollector(Command.UiApp.ActiveUIDocument.Document).                
-                WherePasses(orFilter);            
+            return new FilteredElementCollector(doc).WherePasses(orFilter);            
         }        
     }
 }

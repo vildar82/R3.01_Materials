@@ -16,29 +16,31 @@ namespace R3_01_KR_Material
     [Transaction( TransactionMode.Manual)]
     public class Command : IExternalCommand
     {
-        public static UIApplication UiApp { get; private set; }
-        public static Options Options { get; private set; }
-        public static Error errors;
-
         public Result Execute(ExternalCommandData commandData, ref string message, ElementSet errElements)
         {
             try
             {
-                UiApp = commandData.Application;
-                Options = new Options();
-                errors = new Error();
+                var uiApp = commandData.Application;
+                var options = new Options();
+                var errors = new Error();
                 var doc = commandData.Application.ActiveUIDocument.Document;
 
                 // Проверка определения параметра в проекте                      
-                DefinitionService.CheckDefinition();
+                var checkDef = new DefinitionService(uiApp, options, errors);
+                checkDef.CheckDefinition();
 
                 // Установка параметра ЖБ для элементов
-                MaterialGBService.SetParameters();
+                var materGBserv = new MaterialGBService(uiApp, options, errors);
+                materGBserv.SetParameters();
 
                 if (errors.IsError)
                 {
                     errors.Show(commandData.Application);
                 }
+                else
+                {
+                    TaskDialog.Show(options.ParamKRMaterialName, $"Значение параметра '{options.ParamKRMaterialName}' обновлено");
+                }                
                 return Result.Succeeded;
             }
             catch (Autodesk.Revit.Exceptions.OperationCanceledException)
@@ -49,13 +51,7 @@ namespace R3_01_KR_Material
             {
                 message = ex.Message;
                 return Result.Failed;
-            }
-            finally
-            {
-                UiApp = null;
-                Options = null;
-                errors = null;
-            }        
+            }            
         }        
     }
 }

@@ -7,15 +7,28 @@ using Autodesk.Revit.DB;
 using System.Text.RegularExpressions;
 using System.Diagnostics;
 using Revit_Lib.Extensions;
+using Autodesk.Revit.UI;
+using Revit_Message;
 
 namespace R3_01_KR_Material
 {
     public class MaterialGBService
-    {       
-        public static void SetParameters()
+    {
+        UIApplication uiApp;
+        Options opt;
+        Document doc;
+        Error err;
+        public MaterialGBService(UIApplication uiApp, Options opt, Error err)
         {
-            var doc = Command.UiApp.ActiveUIDocument.Document;
-            var elements = FilterService.Filter();
+            this.err = err;
+            this.uiApp = uiApp;
+            this.opt = opt;
+            doc = uiApp.ActiveUIDocument.Document;
+        }
+
+        public void SetParameters()
+        {            
+            var elements = FilterService.Filter(doc, opt.Categories);
             using (var t = new Transaction(doc, "Установка параметра ЖБ"))
             {
                 t.Start();
@@ -26,13 +39,11 @@ namespace R3_01_KR_Material
                         Debug.WriteLine($"Пропущен элемент - {elem}");
                         continue;
                     }
-
-                    if (!elem.CheckElementAccess(ref Command.errors))
-                        continue;
+                    
 
                     if (HasGBMaterial(doc, elem))
                     {
-                        SetParam(elem, Command.Options.ParamKRMaterialValue);
+                        SetParam(elem, opt.ParamKRMaterialValue);
                         Debug.WriteLine($"SetMaterialGB - {elem}");
                     }
                     else
@@ -44,7 +55,7 @@ namespace R3_01_KR_Material
             }
         }       
 
-        private static bool HasGBMaterial(Document doc, Element elem)
+        private bool HasGBMaterial(Document doc, Element elem)
         {
             // Просмотр среди материалов
             var maters = elem.GetMaterialIds(false);
@@ -60,7 +71,7 @@ namespace R3_01_KR_Material
             return HasGBMaterialInParameters(doc.GetElement(elem.GetTypeId()));
         }
 
-        private static bool HasGBMaterialInParameters(Element elem)
+        private bool HasGBMaterialInParameters(Element elem)
         {
             if (elem == null) return false;
             foreach (Parameter item in elem.Parameters)
@@ -75,19 +86,19 @@ namespace R3_01_KR_Material
             return false;            
         }
 
-        private static bool IsMaterialGB(string name)
+        private bool IsMaterialGB(string name)
         {
-            return Regex.IsMatch(name, Command.Options.ParamARMaterialValue, RegexOptions.IgnoreCase);
+            return Regex.IsMatch(name, opt.ParamARMaterialValue, RegexOptions.IgnoreCase);
         }
 
-        private static void SetParam(Element elem, string value)
+        private void SetParam(Element elem, string value)
         {
-            // Записать в параметр КР_Материал = ЖБ            
-            var pGB = elem.LookupParameter(Command.Options.ParamKRMaterialName);
+            // Записать в параметр КР_Материал = ЖБ              
+            var pGB = elem.LookupParameter(opt.ParamKRMaterialName);
             if (pGB == null)
             {
                 // Не может быть!
-                Command.errors.AddErrorMesaage($"Элемент не содержит параметр '{Command.Options.ParamKRMaterialName}' - '{elem.Name}'", elem);
+                err.AddErrorMesaage($"Элемент не содержит параметр '{opt.ParamKRMaterialName}' - '{elem.Name}'", elem);
             }
             else if ((pGB.HasValue && value == null) ||
                 pGB.AsString() != value)
@@ -98,7 +109,7 @@ namespace R3_01_KR_Material
                 }
                 catch (Exception ex)
                 {
-                    Command.errors.AddErrorMesaage($"Ошибка установки параметра '{Command.Options.ParamKRMaterialName}'='{Command.Options.ParamKRMaterialValue}' в элемент {elem.Name}. {ex.Message}", elem);
+                    err.AddErrorMesaage($"Ошибка установки параметра '{opt.ParamKRMaterialName}'='{opt.ParamKRMaterialValue}'. {ex.Message}", elem);
                 }
             }
         }
